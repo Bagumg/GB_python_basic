@@ -1,29 +1,43 @@
 import requests
 import gzip
 import json
+import datetime
 
-# Открываем gz архив
 with gzip.open('city.list.json.gz', 'rb') as f:
     file = f.read()
-# Считываем ID города, имя и страну, записываем их в переменные
-file_str = file.decode('utf-8')
-city_i = 0
-city_id = []
-city_name = []
-country_name = []
-for i in json.loads(file_str):
-    city_id.append(i['id'])
-    city_name.append(i['name'])
-    country_name.append(i['country'])
 
-# Поочерёдно выводим города из списка и погоду в них.
-for i in city_id:
-    print('Страна: ', country_name[city_i], ' ', end='')
-    print('Город: ', city_name[city_i], ' ', end='')
-    city_temp_cels = requests.get(f'http://api.openweathermap.org/data/2.5/weather?id={i}&units=metric&appid=6f5cb7bcc49645254f60ba8ea1f9e5b5&lang=ru')
-    r = city_temp_cels.json()
-    for w in r['weather']:
-        print('За окном ', w['description'], ' ',  end='')
-    city_temp = r['main']
-    print('Температура: ',city_temp['temp'])
-    city_i += 1
+class Get_weather():
+    def __init__(self):
+        self.city_id = []
+        self.city_name = []
+        self.country_name = []
+        self.city_data = dict()
+        self.now = datetime.datetime.now()
+        self.file_str = file.decode('utf-8')
+
+    def get_weather(self, user_city):
+        if user_city in self.city_data.keys():
+            city_temp_cels = requests.get(f'http://api.openweathermap.org/data/2.5/weather?id={self.city_data[user_city]}&units=metric&appid=6f5cb7bcc49645254f60ba8ea1f9e5b5&lang=ru')
+            r = city_temp_cels.json()
+            print(f'Город {user_city.capitalize()}')
+            print(f'{self.now.hour}:{self.now.minute}')
+            print(r['weather'][0]['description'])
+            print('Температура', r['main']['temp'], ' C', "\u00b0")
+        else:
+            print('Извините, такого города нет в списке')
+
+    def city_data_gen(self):
+        for i in json.loads(self.file_str):
+            self.city_id.append(i['id'])
+            self.city_name.append(i['name'])
+            self.country_name.append(i['country'])
+            self.city_data.update({i['name'].lower(): i['id']})
+
+
+
+cls = Get_weather()
+cls.city_data_gen()
+user_city = ''
+while user_city != 'q' or user_city != 'Q':
+    user_city = input('Укажите город для получения прогноза: ').lower()
+    cls.get_weather(user_city)
